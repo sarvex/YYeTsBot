@@ -7,11 +7,13 @@
 
 __author__ = "Benny <benny.think@gmail.com>"
 
+import uuid
+
 import pymongo
 import os
 import time
 from http import HTTPStatus
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from bson.objectid import ObjectId
 
 import requests
@@ -102,8 +104,12 @@ class BlacklistMongoResource(BlacklistResource):
 
 
 class CommentMongoResource(CommentResource, Mongo):
-    @staticmethod
-    def convert_objectid(data):
+    def __init__(self):
+        super().__init__()
+        self.page = 1
+        self.size = 5
+
+    def convert_objectid(self, data):
         final_data = []
         for item in data:
             item["id"] = str(item["_id"])
@@ -112,9 +118,19 @@ class CommentMongoResource(CommentResource, Mongo):
             # legacy issues
             if item.get("children") is None:
                 item["children"] = []
+
+            # 嵌套评论同样也要支持分页
+            # 新评论在上
+            item["children"].reverse()
+            item["children_count"] = len(item["children"])
+            item["children"] = item["children"][(self.page - 1) * self.size: self.page * self.size]
         return final_data
 
-    def get_comment(self, resource_id: int, page: int, size: int) -> dict:
+    def get_comment(self, resource_id: int, page: int, size: int, **kwargs) -> dict:
+        inner_page = kwargs.get("inner_page", 1)
+        inner_size = kwargs.get("inner_size", 5)
+        self.page = inner_page
+        self.size = inner_size
         condition = {"resource_id": resource_id, "deleted_at": {"$exists": False}}
         if resource_id == -1:
             condition.pop("resource_id")
@@ -164,6 +180,9 @@ class CommentMongoResource(CommentResource, Mongo):
             basic_comment["children"] = []
             self.db["comment"].insert_one(basic_comment)
         else:
+            # 嵌套评论
+            object_id = uuid.uuid1().hex
+            basic_comment["id"] = object_id
             self.db["comment"].find_one_and_update({"_id": ObjectId(comment_id)},
                                                    {"$push": {"children": basic_comment}}
                                                    )
@@ -171,10 +190,14 @@ class CommentMongoResource(CommentResource, Mongo):
         returned["message"] = "评论成功"
         return returned
 
-    def delete_comment(self, obj_id: str):
+    def delete_comment(self, parent_id: str, child_id: str = None):
         current_time = ts_date()
-        count = self.db["comment"].update_one({"_id": ObjectId(obj_id), "deleted_at": {"$exists": False}},
-                                              {"$set": {"deleted_at": current_time}}).modified_count
+        if child_id is None:
+            count = self.db["comment"].update_one({"_id": ObjectId(parent_id), "deleted_at": {"$exists": False}},
+                                                  {"$set": {"deleted_at": current_time}}).modified_count
+        else:
+            count = self.db["comment"].update_one({"_id": ObjectId(parent_id), "deleted_at": {"$exists": False}},
+                                                  {"$pull": {"children": {"id": child_id}}}).modified_count
 
         returned = {"status_code": 0, "message": "", "count": -1}
         if count == 0:

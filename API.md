@@ -225,7 +225,8 @@
   "resource_id": 233,
   "id": "60cab95baa7f515ea291392b",
   "children": [
-  ]
+  ],
+  "children_count": 0
 }
 
 ```
@@ -247,7 +248,7 @@
       "browser": "PostmanRuntime/7.28.0",
       "content": "评论17",
       "id": "60c838a12a5620b7e4ba5dfc",
-      "resource_id": 233,
+      "resource_id": 233
     },
     {
       "username": "Paul",
@@ -255,9 +256,10 @@
       "browser": "PostmanRuntime/7.28.0",
       "content": "评论14",
       "id": "60c838a12a5620b7e4ba1111",
-      "resource_id": 233,
+      "resource_id": 233
     }
-  ]
+  ],
+  "children_count": 2
 }
 
 ```
@@ -269,8 +271,10 @@
 分页，支持URL参数：
 
 * resource_id: 资源id，id为233是留言板，id为-1会返回最新评论
-* size: 每页评论数量，默认5（或者其他数值）
-* page: 当前页
+* size: 每页评论数量，默认5
+* page: 当前页，默认1
+* inner_size: 内嵌评论数量，默认5
+* inner_page: 内嵌评论当前页，默认1
 
 返回
 
@@ -286,7 +290,8 @@
       "content": "test",
       "resource_id": 233,
       "id": "60cab95baa7f515ea291392b",
-      "children": []
+      "children": [],
+      "children_count": 0
     }
   ],
   "count": 1,
@@ -332,7 +337,8 @@
           "id": "60c838a12a5620b7e4ba1111",
           "resource_id": 233
         }
-      ]
+      ],
+      "children_count": 2
     }
   ],
   "count": 2,
@@ -390,9 +396,20 @@
 
 * DELETE `/api/comment`，提交json数据
 
+删除子评论
+
 ```json
 {
-  "id": "60cab935e9f929e09c91392a"
+  "parent_id": "60cab935e9f929e09c91392a",
+  "child_id": "60cab935e9f929e09c91392a1111111"
+}
+```  
+
+删除父评论
+
+```json
+{
+  "parent_id": "60cab935e9f929e09c91392a"
 }
 ```  
 
