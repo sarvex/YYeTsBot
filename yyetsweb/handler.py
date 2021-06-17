@@ -25,8 +25,11 @@ from tornado import web, escape, gen
 from database import Redis, AntiCrawler, CaptchaResource
 
 escape.json_encode = lambda value: json.dumps(value, ensure_ascii=False)
+logging.basicConfig(level=logging.INFO)
 
 adapter = os.getenv("adapter") or "Mongo"
+
+logging.info("%s Running with %s. %s", "#" * 10, adapter, "#" * 10)
 
 
 class BaseHandler(web.RequestHandler):
