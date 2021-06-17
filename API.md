@@ -210,6 +210,58 @@
 
 # 评论
 
+评论的基本数据格式： `children` 字段为 array/list，可套娃另外一条评论，目前暂时只支持两层（也不打算支持更多的啦）。
+
+评论的 `resource_id` 必须相同
+
+## 普通评论
+
+```json
+{
+  "username": "Benny",
+  "date": "2021-06-17 10:54:19",
+  "browser": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.13; rv:85.1) Gecko/20100101 Firefox/85.1",
+  "content": "test",
+  "resource_id": 233,
+  "id": "60cab95baa7f515ea291392b",
+  "children": [
+  ]
+}
+
+```
+
+## 嵌套评论
+
+```json
+{
+  "username": "Benny",
+  "date": "2021-06-17 10:54:19",
+  "browser": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.13; rv:85.1) Gecko/20100101 Firefox/85.1",
+  "content": "test",
+  "resource_id": 233,
+  "id": "60cab95baa7f515ea291392b",
+  "children": [
+    {
+      "username": "Alex",
+      "date": "2021-05-31 16:58:21",
+      "browser": "PostmanRuntime/7.28.0",
+      "content": "评论17",
+      "id": "60c838a12a5620b7e4ba5dfc",
+      "resource_id": 233,
+    },
+    {
+      "username": "Paul",
+      "date": "2021-05-22 16:58:21",
+      "browser": "PostmanRuntime/7.28.0",
+      "content": "评论14",
+      "id": "60c838a12a5620b7e4ba1111",
+      "resource_id": 233,
+    }
+  ]
+}
+
+```
+
 ## 获取评论
 
 * GET `/api/comment`
@@ -222,26 +274,70 @@
 
 返回
 
+普通评论
+
 ```json
 {
   "data": [
     {
-      "date": "2018-09-18 11:12:15",
-      "username": "uuua2",
-      "content": "tdaadd",
-      "id": 2
+      "username": "Benny",
+      "date": "2021-06-17 10:54:19",
+      "browser": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.13; rv:85.1) Gecko/20100101 Firefox/85.1",
+      "content": "test",
+      "resource_id": 233,
+      "id": "60cab95baa7f515ea291392b",
+      "children": []
+    }
+  ],
+  "count": 1,
+  "resource_id": 233
+}
+
+```
+
+楼中楼
+
+```json
+{
+  "data": [
+    {
+      "username": "Benny",
+      "date": "2021-06-17 10:54:19",
+      "browser": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.13; rv:85.1) Gecko/20100101 Firefox/85.1",
+      "content": "test",
+      "resource_id": 233,
+      "id": "60cab95baa7f515ea291392b"
     },
     {
-      "date": "2018-09-01 11:12:15",
-      "username": "abcd",
-      "content": "tdaadd",
-      "id": 1
+      "username": "Benny",
+      "date": "2021-06-15 10:54:19",
+      "browser": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.13; rv:85.1) Gecko/20100101 Firefox/85.1",
+      "content": "test8888",
+      "resource_id": 233,
+      "id": "60cab95baa7f515ea2988888",
+      "children": [
+        {
+          "username": "Alex",
+          "date": "2021-05-31 16:58:21",
+          "browser": "PostmanRuntime/7.28.0",
+          "content": "评论17",
+          "id": "60c838a12a5620b7e4ba5dfc",
+          "resource_id": 233
+        },
+        {
+          "username": "Paul",
+          "date": "2021-05-22 16:58:21",
+          "browser": "PostmanRuntime/7.28.0",
+          "content": "评论14",
+          "id": "60c838a12a5620b7e4ba1111",
+          "resource_id": 233
+        }
+      ]
     }
   ],
   "count": 2,
-  "resource_id": 39301
+  "resource_id": 233
 }
-
 ```
 
 ## 获取验证码
@@ -254,6 +350,10 @@
   只有登录用户才可以发表评论，检查cookie `username` 是否为空来判断是否为登录用户；未登录用户提示“请登录后发表评论”
 
 `resource_id` 从URL中获取，id是上一步验证码的那个随机字符串id， `captcha` 是用户输入的验证码
+
+### 提交新评论
+
+只需要提供如下四项信息即可
 
 ```json
 {
@@ -269,6 +369,20 @@
 ```json
 {
   "message": "评论成功/评论失败/etc"
+}
+```
+
+### 提交楼中楼评论
+
+还需要额外提供一个 `comment_id`，也就是 UUID，如 `60c838a12a5620b7e4ba5dfc`
+
+```json
+{
+  "resource_id": 39301,
+  "content": "评论内容",
+  "id": "1234abc",
+  "captcha": "38op",
+  "comment_id": "60c838a12a5620b7e4ba5dfc"
 }
 ```
 

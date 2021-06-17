@@ -144,9 +144,8 @@ class CommentResource:
         pass
 
     def add_comment(self, captcha: str, captcha_id: int, content: str, resource_id: int, ip: str,
-                    username: str, browser: str) -> dict:
+                    username: str, browser: str, comment_id=None) -> dict:
         pass
-
 
     def delete_comment(self, payload: dict):
         pass

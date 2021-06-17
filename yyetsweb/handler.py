@@ -271,11 +271,14 @@ class CommentHandler(BaseHandler):
         captcha_id = payload["id"]
         content = payload["content"]
         resource_id = payload["resource_id"]
+        comment_id = payload.get("comment_id")
+
         real_ip = AntiCrawler(self).get_real_ip()
         username = self.get_current_user()
         browser = self.request.headers['user-agent']
 
-        result = self.instance.add_comment(captcha, captcha_id, content, resource_id, real_ip, username, browser)
+        result = self.instance.add_comment(captcha, captcha_id, content, resource_id, real_ip,
+                                           username, browser, comment_id)
         self.set_status(result["status_code"])
         return result
 

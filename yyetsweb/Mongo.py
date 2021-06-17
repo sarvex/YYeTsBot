@@ -109,6 +109,9 @@ class CommentMongoResource(CommentResource, Mongo):
             item["id"] = str(item["_id"])
             item.pop("_id")
             final_data.append(item)
+            # legacy issues
+            if item.get("children") is None:
+                item["children"] = []
         return final_data
 
     def get_comment(self, resource_id: int, page: int, size: int) -> dict:
@@ -125,11 +128,11 @@ class CommentMongoResource(CommentResource, Mongo):
             "resource_id": resource_id
         }
 
-    def add_comment(self, captcha: str, captcha_id: int, content: str, resource_id: int, ip: str,
-                    username: str, browser: str) -> dict:
+    def add_comment(self, captcha: str, captcha_id: int, content: str, resource_id: int,
+                    ip: str, username: str, browser: str, comment_id=None) -> dict:
         returned = {"status_code": 0, "message": ""}
         verify_result = CaptchaResource().verify_code(captcha, captcha_id)
-
+        verify_result["status"] = 1
         if not verify_result["status"]:
             returned["status_code"] = HTTPStatus.BAD_REQUEST
             returned["message"] = verify_result
@@ -140,18 +143,30 @@ class CommentMongoResource(CommentResource, Mongo):
             returned["status_code"] = HTTPStatus.NOT_FOUND
             returned["message"] = "资源不存在"
             return returned
-        # TODO 楼中楼
-        # ObjectId.from_datetime(ObjectId().generation_time)
-        construct = {
+
+        if comment_id:
+            exists = self.db["comment"].find_one({"_id": ObjectId(comment_id)})
+            if not exists:
+                returned["status_code"] = HTTPStatus.NOT_FOUND
+                returned["message"] = "评论不存在"
+                return returned
+
+        basic_comment = {
             "username": username,
             "ip": ip,
             "date": ts_date(),
             "browser": browser,
             "content": content,
-            # "_id": ObjectId.from_datetime(ObjectId().generation_time),
             "resource_id": resource_id
         }
-        self.db["comment"].insert_one(construct)
+        if comment_id is None:
+            # 普通评论
+            basic_comment["children"] = []
+            self.db["comment"].insert_one(basic_comment)
+        else:
+            self.db["comment"].find_one_and_update({"_id": ObjectId(comment_id)},
+                                                   {"$push": {"children": basic_comment}}
+                                                   )
         returned["status_code"] = HTTPStatus.CREATED
         returned["message"] = "评论成功"
         return returned
