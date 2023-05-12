@@ -33,6 +33,7 @@ col = mongo_client["zimuzu"]["yyets"]
 
 data = col.find()
 
+should_write = True
 for datum in tqdm(data):
     list_data = datum["data"]["list"]
     translate_year = []
@@ -47,17 +48,14 @@ for datum in tqdm(data):
                     filename_year.append(d)
 
     translate_year = list(set(translate_year))
-    filename_year = list(set(filename_year))  # more accurate
-
     final_year = []
 
-    if filename_year:
+    if filename_year := list(set(filename_year)):
         final_year = filename_year.copy()
     elif translate_year:
         final_year = translate_year
     _id = datum["data"]["info"]["id"]
     name = datum["data"]["info"]["cnname"]
-    should_write = True
     for y in final_year:
         if y <= 1900:
             final_year.remove(y)

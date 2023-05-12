@@ -113,20 +113,17 @@ class UserHandler(BaseHandler):
         browser = self.request.headers['user-agent']
 
         response = self.instance.login_user(username, password, ip, browser)
-        if response["status_code"] in (HTTPStatus.CREATED, HTTPStatus.OK):
-            self.set_login(username)
-            returned_value = ""
-        else:
-            returned_value = response["message"]
+        if response["status_code"] not in (HTTPStatus.CREATED, HTTPStatus.OK):
+            return response["message"]
 
-        return returned_value
+        self.set_login(username)
+        return ""
 
     @run_on_executor()
     def add_remove_fav(self):
         data = json.loads(self.request.body)
         resource_id = int(data["resource_id"])
-        username = self.get_current_user()
-        if username:
+        if username := self.get_current_user():
             response = self.instance.add_remove_fav(resource_id, username)
             self.set_status(response["status_code"])
         else:
@@ -137,13 +134,10 @@ class UserHandler(BaseHandler):
 
     @run_on_executor()
     def get_user_info(self) -> dict:
-        username = self.get_current_user()
-        if username:
-            data = self.instance.get_user_info(username)
-        else:
-            self.set_status(HTTPStatus.UNAUTHORIZED)
-            data = {}
-        return data
+        if username := self.get_current_user():
+            return self.instance.get_user_info(username)
+        self.set_status(HTTPStatus.UNAUTHORIZED)
+        return {}
 
     @gen.coroutine
     def post(self):
@@ -162,9 +156,7 @@ class UserHandler(BaseHandler):
         resp = yield self.get_user_info()
         self.write(resp)
 
-        # everytime we receive a GET request to this api, we'll update last_date and last_ip
-        username = self.get_current_user()
-        if username:
+        if username := self.get_current_user():
             now_ip = AntiCrawler(self).get_real_ip()
             self.instance.update_user_last(username, now_ip)
 

@@ -189,7 +189,7 @@ class YYeTsOffline(BaseFansub):
         results = {}
         for item in data:
             info = item["data"]["info"]
-            url = "https://yyets.dmesg.app/resource.html?id={}".format(info["id"])
+            url = f'https://yyets.dmesg.app/resource.html?id={info["id"]}'
             url_hash = hashlib.sha1(url.encode('u8')).hexdigest()
             all_name = info["cnname"] + info["enname"] + info["aliasname"]
             results[url_hash] = {

@@ -23,7 +23,7 @@ chunk = [ids[x:x + 3000] for x in range(0, len(ids), 3000)]
 def download(c):
     print("running batch ", c[0])
     for i in c:
-        data = s.get("https://yyets.dmesg.app/id={}".format(i)).json()
+        data = s.get(f"https://yyets.dmesg.app/id={i}").json()
         with open(f"{i}.json", "w") as f:
             json.dump(data, f)
 

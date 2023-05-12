@@ -28,12 +28,13 @@ def convert_kv():
         cur = con.cursor()
         cur.execute(SQL)
         data = cur.fetchall()
-        write_data = []
-        for datum in data:
-            write_data.append({
+        write_data = [
+            {
                 "key": str(datum["id"]),  # keys need to be str
-                "value": datum['data']}
-            )
+                "value": datum['data'],
+            }
+            for datum in data
+        ]
         with open(f"kv/kv_data{i - 1}.json", "w") as f:
             json.dump(write_data, f, ensure_ascii=False)
 
@@ -72,10 +73,11 @@ def dump_index():
 def generate_command():
     files = os.listdir("kv")
     tpl = "wrangler kv:bulk put --namespace-id=01d666b5ebae464193998bb074f672cf {filename}"
-    shell = []
-    for file in files:
-        if file.endswith(".json"):
-            shell.append(tpl.format(filename=file) + "\n")
+    shell = [
+        tpl.format(filename=file) + "\n"
+        for file in files
+        if file.endswith(".json")
+    ]
     with open("kv/bulk.sh", "w") as f:
         f.writelines(shell)
 

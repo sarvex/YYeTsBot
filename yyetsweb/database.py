@@ -88,15 +88,11 @@ class AntiCrawler:
         # don't use incr - we need to set expire time
         if con.r.exists(ip):
             count_str = con.r.get(ip)
-            count = int(count_str)
-            count += 1
+            count = int(count_str) + 1
         else:
             count = 1
         # ban rule: (count-10)*600
-        if count > 10:
-            ex = (count - 10) * 3600
-        else:
-            ex = None
+        ex = (count - 10) * 3600 if count > 10 else None
         con.r.set(ip, count, ex)
 
     def get_real_ip(self):

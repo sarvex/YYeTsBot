@@ -59,9 +59,7 @@ def send_ping(message):
 
     info = get_runtime("botsrunner_yyets_1")
 
-    usage = ""
-    if str(message.chat.id) == MAINTAINER:
-        usage = show_usage()
+    usage = show_usage() if str(message.chat.id) == MAINTAINER else ""
     announcement = redis_announcement() or ""
     if announcement:
         announcement = f"\n\n*公告：{announcement}*\n\n"
@@ -152,11 +150,9 @@ def download_to_io(photo):
 
 def send_my_response(message):
     bot.send_chat_action(message.chat.id, 'record_video_note')
-    # I may also send picture
-    photo = message.photo
     uid = message.reply_to_message.caption
     text = f"主人说：{message.text or message.caption or '啥也没说😯'}"
-    if photo:
+    if photo := message.photo:
         bot.send_chat_action(message.chat.id, 'typing')
         logging.info("Photo received from maintainer")
         mem = download_to_io(photo)
@@ -183,10 +179,7 @@ def send_search(message):
 
 
 def base_send_search(message, instance=None):
-    if instance is None:
-        fan = fansub.FansubEntrance()
-    else:
-        fan = instance
+    fan = fansub.FansubEntrance() if instance is None else instance
     bot.send_chat_action(message.chat.id, 'typing')
 
     today_request("total")
@@ -212,7 +205,9 @@ def base_send_search(message, instance=None):
     source = result.get("class")
     result.pop("class")
     for url_hash, detail in result.items():
-        btn = types.InlineKeyboardButton(detail["name"], callback_data="choose%s" % url_hash)
+        btn = types.InlineKeyboardButton(
+            detail["name"], callback_data=f"choose{url_hash}"
+        )
         markup.add(btn)
 
     if result:
@@ -248,11 +243,10 @@ def base_send_search(message, instance=None):
 def magic_recycle(fan, call, url_hash):
     if fan.redis.exists(url_hash):
         return False
-    else:
-        logging.info("👏 Wonderful magic!")
-        bot.answer_callback_query(call.id, "小可爱使用魔法回收了你的搜索结果，你再搜索一次试试看嘛🥺", show_alert=True)
-        bot.delete_message(call.message.chat.id, call.message.message_id)
-        return True
+    logging.info("👏 Wonderful magic!")
+    bot.answer_callback_query(call.id, "小可爱使用魔法回收了你的搜索结果，你再搜索一次试试看嘛🥺", show_alert=True)
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    return True
 
 
 @bot.callback_query_handler(func=lambda call: re.findall(r"choose(\S*)", call.data))
@@ -266,8 +260,12 @@ def choose_link(call):
 
     markup = types.InlineKeyboardMarkup()
     # add class
-    btn1 = types.InlineKeyboardButton("分享页面", callback_data="share%s" % resource_url_hash)
-    btn2 = types.InlineKeyboardButton("我全都要", callback_data="all%s" % resource_url_hash)
+    btn1 = types.InlineKeyboardButton(
+        "分享页面", callback_data=f"share{resource_url_hash}"
+    )
+    btn2 = types.InlineKeyboardButton(
+        "我全都要", callback_data=f"all{resource_url_hash}"
+    )
     markup.add(btn1, btn2)
 
     text = "想要分享页面，还是我全都要？\n\n" \
@@ -286,7 +284,9 @@ def share_page(call):
         return
 
     result = fan.search_result(resource_url_hash)
-    bot.send_message(call.message.chat.id, "{}  {}".format(result['cnname'], result['share']))
+    bot.send_message(
+        call.message.chat.id, f"{result['cnname']}  {result['share']}"
+    )
 
 
 @bot.callback_query_handler(func=lambda call: re.findall(r"all(\S*)", call.data))
@@ -305,7 +305,7 @@ def all_episode(call):
         tmp.flush()
         with open(tmp.name, "rb") as f:
             bot.send_chat_action(call.message.chat.id, 'upload_document')
-            bot.send_document(call.message.chat.id, f, caption="%s" % result["cnname"])
+            bot.send_document(call.message.chat.id, f, caption=f'{result["cnname"]}')
 
 
 @bot.callback_query_handler(func=lambda call: re.findall(r"unwelcome(\d*)", call.data))
@@ -318,9 +318,7 @@ def send_unwelcome(call):
     # angry_count = angry_count + 1
     global angry_count
     angry_count += 1
-    uid = re.findall(r"unwelcome(\d*)", call.data)[0]
-
-    if uid:
+    if uid := re.findall(r"unwelcome(\d*)", call.data)[0]:
         text = "人人影视主要提供欧美日韩等海外资源，你的这个真没有🤷‍。\n" \
                "<b>麻烦你先从自己身上找原因</b>，我又不是你的专属客服。\n" \
                "不要再报告这种错误了🙄️，面倒な。😡"
@@ -337,7 +335,7 @@ def report_error(call):
         bot.answer_callback_query(call.id, '多次汇报重复的问题并不会加快处理速度。', show_alert=True)
         return
 
-    text = f'人人影视机器人似乎出现了一些问题🤔🤔🤔……{error_content[0:300]}'
+    text = f'人人影视机器人似乎出现了一些问题🤔🤔🤔……{error_content[:300]}'
 
     markup = types.InlineKeyboardMarkup()
     btn = types.InlineKeyboardButton("unwelcome", callback_data=f"unwelcome{call.message.chat.id}")

@@ -49,8 +49,7 @@ def main():
     mysql_cur.execute("SELECT * FROM resource")
 
     while True:
-        data = mysql_cur.fetchmany(SIZE)
-        if data:
+        if data := mysql_cur.fetchmany(SIZE):
             mongodb_insert(data)
         else:
             break

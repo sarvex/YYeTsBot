@@ -85,8 +85,7 @@ def main():
 
     with tqdm.tqdm(total=count * 2) as pbar:
         while True:
-            data = mysql_cur.fetchmany(SIZE)
-            if data:
+            if data := mysql_cur.fetchmany(SIZE):
                 sqlite_insert(data)
                 pbar.update(SIZE)
                 mongodb_insert(data)

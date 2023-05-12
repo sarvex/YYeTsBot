@@ -68,7 +68,7 @@ class RunServer:
             tornado_server.start(0)
 
         try:
-            print('Server is running on http://{}:{}'.format(host, port))
+            print(f'Server is running on http://{host}:{port}')
             ioloop.IOLoop.instance().current().start()
         except KeyboardInterrupt:
             ioloop.IOLoop.instance().stop()

@@ -36,8 +36,9 @@ class Mongo:
         self.client.close()
 
     def is_admin(self, username: str) -> bool:
-        data = self.db["users"].find_one({"username": username, "group": {"$in": ["admin"]}})
-        if data:
+        if data := self.db["users"].find_one(
+            {"username": username, "group": {"$in": ["admin"]}}
+        ):
             return True
 
 
@@ -124,12 +125,11 @@ class CommentMongoResource(CommentResource, Mongo):
             children_ids = item.get("children", [])
             condition = {"_id": {"$in": children_ids}, "deleted_at": {"$exists": False}, "type": "child"}
             children_data = self.db["comment"].find(condition, self.projection) \
-                .sort("_id", pymongo.DESCENDING).limit(self.inner_size).skip((self.inner_page - 1) * self.inner_size)
+                    .sort("_id", pymongo.DESCENDING).limit(self.inner_size).skip((self.inner_page - 1) * self.inner_size)
             children_data = list(children_data)
             self.get_user_group(children_data)
             if children_data:
-                item["children"] = []
-                item["children"].extend(children_data)
+                item["children"] = list(children_data)
 
     def get_user_group(self, data):
         for comment in data:
@@ -189,10 +189,7 @@ class CommentMongoResource(CommentResource, Mongo):
             "content": content,
             "resource_id": resource_id
         }
-        if parent_comment_id is None:
-            basic_comment["type"] = "parent"
-        else:
-            basic_comment["type"] = "child"
+        basic_comment["type"] = "parent" if parent_comment_id is None else "child"
         # 无论什么评论，都要插入一个新的document
         inserted_id: str = self.db["comment"].insert_one(basic_comment).inserted_id
 
@@ -212,9 +209,9 @@ class CommentMongoResource(CommentResource, Mongo):
         current_time = ts_date()
         count = self.db["comment"].update_one({"_id": ObjectId(comment_id), "deleted_at": {"$exists": False}},
                                               {"$set": {"deleted_at": current_time}}).modified_count
-        # 找到子评论，全部标记删除
-        parent_data = self.db["comment"].find_one({"_id": ObjectId(comment_id)})
-        if parent_data:
+        if parent_data := self.db["comment"].find_one(
+            {"_id": ObjectId(comment_id)}
+        ):
             child_ids = parent_data.get("children", [])
         else:
             child_ids = []
@@ -322,10 +319,9 @@ class ResourceMongoResource(ResourceResource, Mongo):
 
         if username:
             user_like_data = self.db["users"].find_one({"username": username})
-            if user_like_data and resource_id in user_like_data.get("like", []):
-                data["is_like"] = True
-            else:
-                data["is_like"] = False
+            data["is_like"] = bool(
+                user_like_data and resource_id in user_like_data.get("like", [])
+            )
         return data
 
     def search_resource(self, keyword: str) -> dict:
@@ -341,15 +337,14 @@ class ResourceMongoResource(ResourceResource, Mongo):
             ]},
             projection
         )
-        data = list(data)
         returned = {}
-        if data:
+        if data := list(data):
             returned = dict(data=data)
             returned["extra"] = []
         else:
             extra = self.fansub_search(ZimuxiaOnline.__name__, keyword) or \
-                    self.fansub_search(NewzmzOnline.__name__, keyword) or \
-                    self.fansub_search(ZhuixinfanOnline.__name__, keyword)
+                        self.fansub_search(NewzmzOnline.__name__, keyword) or \
+                        self.fansub_search(ZhuixinfanOnline.__name__, keyword)
 
             returned["data"] = []
             returned["extra"] = extra
@@ -441,8 +436,7 @@ class UserMongoResource(UserResource, Mongo):
 
     def get_user_info(self, username: str) -> dict:
         projection = {"_id": False, "password": False}
-        data = self.db["users"].find_one({"username": username}, projection)
-        return data
+        return self.db["users"].find_one({"username": username}, projection)
 
     def update_user_last(self, username: str, now_ip: str) -> None:
         self.db["users"].update_one({"username": username},

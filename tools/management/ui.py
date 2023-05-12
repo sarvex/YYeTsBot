@@ -80,7 +80,7 @@ def get_value():
     for i in range(1, int(episode_input[1].get()) + 1):
         d = dl.copy()
         d["episode"] = str(i)
-        d["name"] = "{}第{}集".format(cn_input[1].get(), i)
+        d["name"] = f"{cn_input[1].get()}第{i}集"
         item_structure["MP4"].append(d)
 
     info_structure = {
@@ -119,7 +119,7 @@ window = sg.Window('Management', layout)
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     event, values = window.read()
-    if event == sg.WIN_CLOSED or event == 'Cancel':  # if user closes window or clicks cancel
+    if event in [sg.WIN_CLOSED, 'Cancel']:  # if user closes window or clicks cancel
         break
     if event == "Ok":
         print('You entered ', values[0], values[1], values[2])
